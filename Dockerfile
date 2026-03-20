@@ -3,6 +3,7 @@
 # and run the container
 
 # Started with base image
+
 FROM golang:1.22 AS base
 
 # Set the working directory inside the container
@@ -34,5 +35,5 @@ COPY --from=base /app/static ./static
 #Expose the port on which application will run 
 EXPOSE 8080
 
-#Command to run the application 
-CMD ["./main"] 
+#Command to run the application
+CMD ["./main"]
