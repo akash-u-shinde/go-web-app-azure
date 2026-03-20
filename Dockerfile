@@ -37,3 +37,18 @@ EXPOSE 8080
 
 #Command to run the application
 CMD ["./main"]
+
+#--------------------------------
+# FROM goolang:1.22.5 as base #use the official golang image as the base image for the build stage
+# Workdir /app #set the working directory inside the container to /app
+# Copy go.mod . #copies the dependency file to the working directory 
+# Run go mod download  #download the libraries specified in the go.mod file
+# Copy . . #copies all your source code to the working directory
+# Run build -o main . #complile the application into single binary named main
+
+# From gcr.io/distroless/base #use the distroless image as the base image for the final stage, which is a minimal image that only contains the necessary files to run the application
+# Copy --from=base /app/main . #copy the compiled binary from the build stage to the final stage
+# Copy --from=base /app/static ./static #copy the static files from the build stage to the final stage
+# Expose 8080 #expose the port on which the application will run
+# CMD [ "./main" ] #specify the command to run the application when the container starts, which is to execute the main binary
+
