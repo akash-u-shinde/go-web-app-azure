@@ -4,7 +4,7 @@
 
 # Started with base image
 
-FROM golang:1.22 AS base
+FROM golang:1.22.5 As base
 
 # Set the working directory inside the container
 WORKDIR /app
@@ -18,7 +18,10 @@ RUN go mod download
 # Copy source code into working directory 
 COPY . .
 
-# Buid the application
+#Disable CGO to ensure that the application is statically linked, which is necessary for running in a distroless image
+ENV CGO_ENABLED=0 
+
+# Buid the application and create a single binary named main
 RUN go build -o main .
 
 #Ruduce the image size using multi stage build

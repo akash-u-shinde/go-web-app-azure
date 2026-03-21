@@ -15,14 +15,7 @@ spec:
           backend:
             service:
               name: go-web-app-service #This must match the name of the service defined in service.yaml
-              ports:
-                - port: 80 #This must match the port defined in service.yaml
-      # https:
-      #   paths:
-      #   - path: /
-      #     pathType: Prefix
-      #     backend:
-      #       service:
-      #         name: go-web-app-service
-      #         ports:
-      #           - port: 443
+              port:
+                number: 80 #This must match the port defined in service.yaml
+
+

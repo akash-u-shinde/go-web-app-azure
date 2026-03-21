@@ -1,12 +1,12 @@
 #This is sample deployment file for web application.
-apiVesion: apps/v1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: go-web-app-deployment  #deployment name
   labels:
     app: go-web-app #This is a label that can be used to identify the deployment. It can be the same as the app label in service.yaml, but it doesn't have to be.
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: go-web-app-pod # This MUST match the template labels below
@@ -17,6 +17,6 @@ spec:
     spec:
       containers:
         - name: go-web-app-container
-          image: akashshinde1808/go-web-app:v1
+          image: myacr121-a8e4crbfcgcaamd5.azurecr.io/go-web-app:v1
           ports:
             - containerPort: 8080 #This MUST match the targetPort in service.yaml 
