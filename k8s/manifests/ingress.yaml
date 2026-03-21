@@ -10,13 +10,13 @@ spec:
     - host: go-web-app.local
       http:
         paths:
-        - path: /
-          pathType: Prefix
+        - path: / # This is the path that will be used to access the application. You can choose any path you like, but it must match the path defined in the annotation above.
+          pathType: Prefix #
           backend:
             service:
-              name: go-web-app-service
+              name: go-web-app-service #This must match the name of the service defined in service.yaml
               ports:
-                - port: 80
+                - port: 80 #This must match the port defined in service.yaml
       # https:
       #   paths:
       #   - path: /
