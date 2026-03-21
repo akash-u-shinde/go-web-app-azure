@@ -39,7 +39,7 @@ EXPOSE 8080
 CMD ["./main"]
 
 #--------------------------------
-# FROM goolang:1.22.5 as base #use the official golang image as the base image for the build stage
+# FROM golang:1.22.5 as base #use the official golang image as the base image for the build stage
 # Workdir /app #set the working directory inside the container to /app
 # Copy go.mod . #copies the dependency file to the working directory 
 # Run go mod download  #download the libraries specified in the go.mod file

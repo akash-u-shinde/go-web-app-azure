@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: go-web-app-ingress
+  annotations: #This annotation is used to rewrite the URL path. It tells the ingress controller to rewrite the incoming request path to / before forwarding it to the backend service. This is useful if your backend service expects requests to be at the root path.
+    nginx.ingress.kubernetes.io/rewrite-target: / #This annotation is specific to the NGINX Ingress Controller. If you are using a different ingress controller, you may need to use a different annotation or configuration method to achieve the same result.
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: go-web-app.local
+      http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: go-web-app-service
+              ports:
+                - port: 80
+      # https:
+      #   paths:
+      #   - path: /
+      #     pathType: Prefix
+      #     backend:
+      #       service:
+      #         name: go-web-app-service
+      #         ports:
+      #           - port: 443
