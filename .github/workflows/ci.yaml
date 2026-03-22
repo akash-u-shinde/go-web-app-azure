@@ -15,7 +15,7 @@ on:
 
 permissions:
   id-token: write   # 🔥 REQUIRED
-  contents: read
+  contents: write
   
 jobs:
 
