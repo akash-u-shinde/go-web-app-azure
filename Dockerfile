@@ -18,10 +18,10 @@ RUN go mod download
 # Copy source code into working directory 
 COPY . .
 
-#Disable CGO to ensure that the application is statically linked, which is necessary for running in a distroless image
-ENV CGO_ENABLED=0 
+#Disable C dependencies to create a statically linked binary, which is necessary for running the application in a distroless image
+ENV CGO_ENABLED=0
 
-# Buid the application and create a single binary named main
+# Build the application and create a single binary named main
 RUN go build -o main .
 
 #Ruduce the image size using multi stage build
@@ -47,6 +47,7 @@ CMD ["./main"]
 # Copy go.mod . #copies the dependency file to the working directory 
 # Run go mod download  #download the libraries specified in the go.mod file
 # Copy . . #copies all your source code to the working directory
+# ENV CGO_ENABLED=0 # Disables C dependencies, Creates static binary which is necessary for running the application in a distroless image
 # Run build -o main . #complile the application into single binary named main
 
 # From gcr.io/distroless/base #use the distroless image as the base image for the final stage, which is a minimal image that only contains the necessary files to run the application
