@@ -13,9 +13,9 @@ on:
       - 'k8s/**'
       - 'Readme.md'
 
-permissions:
-  id-token: write   # 🔥 REQUIRED
-  contents: write
+# permissions:
+#   id-token: write   # 🔥 REQUIRED
+#   contents: write
   
 jobs:
 
@@ -92,7 +92,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.TOKEN }}
 
       - name: Update tag in Helm chart
         run: |
