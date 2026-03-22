@@ -13,9 +13,9 @@ on:
       - 'k8s/**'
       - 'Readme.md'
 
-# permissions:
-#   id-token: write   # 🔥 REQUIRED
-#   contents: write
+permissions:
+  id-token: write   # 🔥 REQUIRED
+  contents: write
   
 jobs:
 
