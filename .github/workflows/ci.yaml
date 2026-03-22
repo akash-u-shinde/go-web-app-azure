@@ -13,6 +13,10 @@ on:
       - 'k8s/**'
       - 'Readme.md'
 
+permissions:
+  id-token: write   # 🔥 REQUIRED
+  contents: read
+  
 jobs:
 
   build: # This is the name of the job1
