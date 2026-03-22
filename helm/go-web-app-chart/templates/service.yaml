@@ -1,0 +1,14 @@
+apiVersion: v1 #
+kind: Service
+metadata: 
+  name: go-web-app-service #service name
+  labels:
+    app: go-web-app #This is a label that can be used to identify the service. It can be the same as the app label in deployment.yaml, but it doesn't have to be. 
+spec:
+  type: ClusterIP #This is the default service type. It exposes the service on a cluster-internal IP. You can choose other types like NodePort or LoadBalancer if you want to expose the service outside the cluster.  
+  selector:
+    app: go-web-app-pod  #This MUST match the template labels in deployment.yaml
+  ports:
+    - port: 80 #This is the port that will be exposed outside the cluster. You can choose any port you like, but it must be different from the targetPort.
+      targetPort: 8080   #This must match the EXPOSE port in your Dockerfile and the containerPort in your deployment.yaml 
+      protocol: TCP 

@@ -17,6 +17,6 @@ spec:
     spec:
       containers:
         - name: go-web-app-container
-          image: myacr121.azurecr.io/go-web-app:1.1
+          image: myacr121.azurecr.io/go-web-app:{{ .Values.image.tag }}
           ports:
             - containerPort: 8080 #This MUST match the targetPort in service.yaml 
