@@ -1,0 +1,315 @@
+Test application locally
+
+go build -o main .
+ls
+./main
+ 
+
+or go run main.go
+http://localhost:8080/courses
+
+=====================================================================================================
+
+Step1)Containerizing the application by using multistage dockerfile
+
+From golang:1.22.5 as base
+WorkDir /app
+Copy go.mod .
+Run go mod download 
+copy . .
+Run go build -o main .
+
+#Statge 2 
+From gcr.io/distroless/base 
+Copy --from=base /app/main .
+Copy --from=base /app/static ./static
+Expose 8080
+Cmd ["./main"]
+
+Need dockerhub running installed locally 
+
+docker build -t akashshinde1808/go-web-app:v1 .  --->build the image locally 
+docker run -p 8080:8080 -it akashshinde1808/go-web-app:v1 --->test the image locally
+docker push akashshinde1808/go-web-app:v1  --->push image to dockerhub
+
+==========================================================================================================
+
+step2: write kubernates manifests yaml file
+
+Deployment.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-web-app-deployment
+spec:
+  replicas: 4
+  selector:
+    matchLabels: 
+      app: go-web-app-pod
+  template:
+    metada:
+      labels:
+	app: go-web-app-pod
+    spec:
+      containers:
+	- name: go-web-app-cont
+	  image: akashshinde1808/go-web-app:v1
+	  ports: 
+	    - containerPort: 8080
+
+a
+k 
+m -->name
+s -->replica, selector, template
+
+Service.yaml
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: go-web-app-service
+spec:
+  type: ClusterIP
+  selector: 
+    app: go-web-app-pod
+  ports:
+    - port: 80
+      targetPort: 8080
+      protocol: TCP
+
+a
+k
+m -->name
+s -->type, selector, ports
+
+Ingress.yaml
+
+apiVersion: networkings.k8s.io/v1
+kind: Ingress
+metadata:
+  name: go-web-app-ingress
+  annotations:
+    nginx.ingress.kubernates.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: go-web-app.local
+      http:
+	paths:
+	- path: /
+	  pathType: prefix
+	  backend: 
+	    service:
+	      name: go-web-app-service
+	      ports:
+                - port: 80
+
+a
+k
+m -->name, annotations
+s -->ingressClassName, rules
+
+====================================================================
+⚙️ 3. Build image locally and push to ACR 
+
+🔹 STEP 1: Create Resource Group
+		az group create --name aks-rg --location centralindia
+
+🔹 STEP 2: Create Azure Container Registry (ACR)
+		az acr create --resource-group aks-rg --name myacr121 --sku Basic
+
+🔹 STEP 3: Build & Push Image to ACR
+
+Build → Docker OR ACR Build
+Store → ACR / DockerHub
+Run/Test → Docker (mandatory locally)
+Deploy → AKS
+
+1)Using ACR, we can build and push to acr only i.e will store the image in acr [ Note: we can't run container from az acr , we need docker for running the container so container is running instance of image and for that we docker complusary ]
+
+
+az login
+az acr login -n myacr121 --expose-token
+
+build the image locally --> az acr build -r myacr121 .
+			    az acr build --registry <YourACRName> .   
+build and push to acr --> az acr build --registry myacr121 --image go-web-app:v1 . or az acr build -r myacr121 -t go-web-app:v1 .
+			  az acr build --registry <YourACRName> --image <ImageName>:<Tag> .
+ 
+Verify Image in ACR--->  az acr repository list --name myacr121 --output table
+			 az acr repository list --name <acr-name> --output table
+
+Show tags for a specific image--> 	az acr repository show-tags --name myacr121 --repository go-web-app --output table
+					az acr repository show-tags --name <YourACRName> --repository <ImageName> --output table
+
+
+2) using docker 
+
+az acr login --name myacr121
+docker pull myacr121-a8e4crbfcgcaamd5.azurecr.io/go-web-app:v1 -->pull image from acr
+docker run -p 8080:8080 -it myacr121-a8e4crbfcgcaamd5.azurecr.io/go-web-app:v1 -->run the image using docker 
+
+
+docker build -t akashshinde1808/go-web-app:v1 .  --->build the image locally 
+docker run -p 8080:8080 -it akashshinde1808/go-web-app:v1 --->test the image locally
+docker login -->login to dockerhub 
+docker push akashshinde1808/go-web-app:v1  --->push image to dockerhub
+docker ps
+docker image ls 
+
+=============================================================================
+
+4)Deploy Application to AKS using manifest file.
+
+🔹 STEP 1: Create AKS Cluster
+ 		az aks create --resource-group aks-rg --name aks-cluster --node-count 1 --generate-ssh-keys
+		👉 This creates managed Kubernetes in Azure.
+
+🔹 STEP 2: Connect to AKS
+		az aks get-credentials --resource-group aks-rg --name aks-cluster
+
+🔹 STEP 3: Attach ACR to AKS
+		az aks update --name aks-cluster --resource-group aks-rg --attach-acr myacr121
+		👉 This allows AKS to pull images securely.
+
+🔹 STEP 4: Update Kubernetes Deployment -->Change image
+		image: myacr121-a8e4crbfcgcaamd5.azurecr.io/go-web-app:v1
+
+🔹 STEP 5: Check manifest file befor applying
+
+		kubectl apply -f k8s/manifests/ --dry-run=client
+		kubectl apply -f k8s/manifests/ --dry-run=server
+		kubectl apply -f k8s/manifests/ --validate=true
+		kubectl apply -f k8s/manifests/ --validate=true --dry-run=client  -->VALIDATE YAML FORMAT
+		kubectl apply -f k8s/manifests/ --dry-run=server --validate=true
+		kubectl explain ingress.spec.rules.http.paths.backend.service   -->EXPLAIN (UNDERSTAND STRUCTURE)
+
+🔹 STEP 6: Deploy to AKS
+		kubectl apply -f k8s/
+
+🔹 Step 7: Test the application internally 
+		Kubectl edit svc go-web-app-service and the type from ClusterIP to NodePort
+		Kubectl get svc 
+		Kubectl get node -o wide
+		
+		Applicetion is not accessible since nodePort has not external IP or no Public node access
+
+🔹 Step 8: SOLUTION OPTIONS
+		OPTION 1: Use kubectl port-forward (FASTEST)
+			  kubectl port-forward svc/go-web-app-service 8080:80 or kubectl port-forward pod/<pod-name> 8080:8080 e.g.
+										 kubectl port-forward pod/go-web-app-deployment-57c98b868d-rj69p 8080:8080
+
+				localhost:8080 → Kubectl  → Service:80  → Pod:8080
+
+				kubectl port-forward creates a temporary tunnel from my local machine to a Kubernetes service or pod. It allows me to access the application locally without 				exposing it externally. For example, I map localhost port 8080 to service port 80, which forwards traffic to the running pod.
+				It is mainly used for debugging and development, as it bypasses Kubernetes networking and directly connects to the resource through the API server.
+
+				Local Port → kubectl tunnel → Service → Pod
+	
+
+			  Now open: http://localhost:8080/cources
+		OPTION 2: Change Service to LoadBalancer (REAL-WORLD)
+
+
+🔹 Step 9: Delete manifests
+	    kubectl delete -f .\k8s\manifests\
+
+            Delete resource group --> az group delete --name aks-rg --yes --no-wait
+
+============================================================================================================
+
+Step 6) Ingress (AKS Version)
+
+	
+1)Install NGINX:
+
+	kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/cloud/deploy.yaml
+
+	kubectl delete -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/cloud/deploy.yaml
+
+
+
+2)Check ingress controller is running or not 
+
+	kubectl get pod -n ingress-nginx
+	kubectl edit pod ingress-nginx-controller-6867499c78-v5mzq -n ingress-nginx 
+	kubectl get ing
+	ping go-web-app.local	
+
+-----------------
+	🚀 HOW TO ACCESS YOUR APPLICATION
+	HOST: go-web-app.local
+	IP:   20.204.204.251
+	👉 But your system doesn’t know this mapping yet ❗
+
+	✅ STEP 1: UPDATE HOST FILE (VERY IMPORTANT)
+
+	On Windows:
+	Open Notepad as Administrator
+	Edit file: C:\Windows\System32\drivers\etc\hosts
+	👉 Add this line:
+	20.204.204.251 go-web-app.local
+	Save file
+
+	✅ STEP 2: ACCESS APPLICATION
+	Open browser: http://go-web-app.local
+
+	✅ STEP 3: Check Ingress Controller Service
+	kubectl get svc -n ingress-nginx
+	👉 Look for:
+	TYPE: LoadBalancer
+	EXTERNAL-IP: 20.204.204.251
+
+	✅ STEP 4: Check Pods
+	kubectl get pods -n ingress-nginx
+	👉 Should be Running
+
+
+	✅ STEP 5: IF SITE NOT OPENING -> DNS not working ❌
+	👉 Run:
+	ping go-web-app.local
+	👉 Should resolve to:
+	20.204.204.251
+
+
+
+========================================================================================
+Step 7) Helm chart Creation:
+
+	Check helm is installed or not -->helm version 
+
+	mkdir helm -->cd helm
+	
+	1) Create helm chart -->helm create go-web-app-chart --->cd go-web-app-chart --->rm -r charts--> cd template --> rm -r * --> cp ../../../k8s/manifests/* .
+
+	2) edit values.yaml as per required for e.g change repository and tag 
+
+	3) go to helm location where chart is there  ( PS C:\Users\Admin\Desktop\Go-web-app-Azure\go-web-app-azure\helm> )
+
+	4) helm install <release-name> <chart-name> e.g helm install go-web-app ./go-web-app-chart 
+
+	5) check every is installed or not -->Kubectl get all
+
+	6) unistall everything -->helm uninstall <release-name> e.g. helm uninstall go-web-app 
+
+============================================================================================
+step 8) CI using GitHub Action
+
+ 	1) create folder .GitHub -->workflows -->ci.yaml
+
+ 
+
+				
+az role assignment create --assignee 140e29bf-3e8a-483c-a79e-427436ee0c76 --role Contributor --scope /subscriptions/5ac03c91-b6d7-489d-a884-530ecd2134b3
+
+
+
+
+
+
+
+	
+
+
+
