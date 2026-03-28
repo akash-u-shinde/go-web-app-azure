@@ -3,6 +3,6 @@ replicaCount: 1
 image:
   repository: myacr121.azurecr.io/go-web-app
   pullPolicy: IfNotPresent
-  tag: "23686072504"
+  tag: "23686193004"
 
   
