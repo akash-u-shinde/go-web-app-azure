@@ -6,7 +6,7 @@ metadata:
   labels:
     app: go-web-app #This is a label that can be used to identify the deployment. It can be the same as the app label in service.yaml, but it doesn't have to be.
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: go-web-app-pod # This MUST match the template labels below
@@ -17,6 +17,6 @@ spec:
     spec:
       containers:
         - name: go-web-app-container
-          image: myacr121.azurecr.io/go-web-app:1.1
+          image: myacr121.azurecr.io/go-web-app:v1
           ports:
             - containerPort: 8080 #This MUST match the targetPort in service.yaml 
