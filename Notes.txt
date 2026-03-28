@@ -409,10 +409,95 @@ jobs:
 
 ====================================================================
 STEP 9: Argo CD Setup (Same as your EKS)
-Deploy Argo CD in AKS:
+Deploy Argo CD in AKS(Install Argo CD):
 
-kubectl create namespace argocd
-kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+Install Argo CD using manifests
+
+  kubectl create namespace argocd
+  kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
+STEP 1: Change Service to LoadBalancer
+Access the Argo CD UI (Loadbalancer service)- For Linux:
+  kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}'
+
+Access the Argo CD UI (Loadbalancer service) -For Windows:
+  kubectl patch svc argocd-server -n argocd -p '{\"spec\": {\"type\": \"LoadBalancer\"}}'
+
+⏳ STEP 2: Wait for External IP
+
+Check:
+kubectl get svc argocd-server -n argocd
+
+👉 Initially:
+EXTERNAL-IP: <pending>
+
+👉 After ~30–60 seconds:
+EXTERNAL-IP: 4.xxx.xxx.xxx  ✅
+
+🔍 STEP 3: Verify Service Details
+kubectl describe svc argocd-server -n argocd
+
+👉 Ensure:
+Type: LoadBalancer
+Port: 80 → TargetPort: 8080
+Port: 443 → TargetPort: 8080
+
+🌐 STEP 4: Access ArgoCD UI (IMPORTANT)
+👉 Open browser:
+https://<EXTERNAL-IP>
+Example:https://4.188.71.187
+
+⚠️ STEP 5: Handle SSL Warning
+You will see:
+Your connection is not private
+✔ Click: Advanced → Proceed
+👉 This is expected (self-signed cert)
+
+🔐 STEP 6: Get Login Credentials
+Username:admin
+Password:Run command:kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath="{.data.password}" | base64 -d
+👉 Copy output password
+
+🔑 STEP 7: Login
+Username → admin
+Password → (from above command)
+
+🔍 STEP 8: If UI NOT Opening (Troubleshooting)
+
+   1. Test via curl
+curl -k https://<EXTERNAL-IP>
+🔹 2. Check pods
+kubectl get pods -n argocd
+👉 All should be:Running
+🔹 3. Check service again
+kubectl get svc -n argocd
+🔹 4. Check logs
+kubectl logs -n argocd deployment/argocd-server
+🔹 5. Restart (if needed)
+kubectl rollout restart deployment argocd-server -n argocd
+
+⚠️ IMPORTANT NOTE (VERY COMMON ISSUE)
+
+If https is not working, try: https://<EXTERNAL-IP>:443
+
+🔥 OPTIONAL (If HTTPS still gives trouble)
+Enable HTTP (for testing only):kubectl edit deployment argocd-server -n argocd
+Add under container args: - --insecure
+Then: kubectl rollout restart deployment argocd-server -n argocd
+
+👉 Now access:
+http://<EXTERNAL-IP>
+
+🧠 FINAL ARCHITECTURE
+Browser
+   ↓
+Public IP (Azure LoadBalancer)
+   ↓
+argocd-server Service (80/443)
+   ↓
+Pod (ArgoCD running on 8080)
+
+Interview Answer: “To expose ArgoCD in AKS, I changed the service type to LoadBalancer, which created an Azure public IP. Since ArgoCD runs HTTPS by default, I accessed it via https://<external-ip> and retrieved the admin password from Kubernetes secret.”
 
 =====================================================================
 
