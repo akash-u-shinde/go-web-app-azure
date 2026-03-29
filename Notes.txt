@@ -197,25 +197,22 @@ docker image ls
 
 🔹 Step 8: SOLUTION OPTIONS
 		OPTION 1: Use kubectl port-forward (FASTEST)
-			  kubectl port-forward svc/go-web-app-service 8080:80 or kubectl port-forward pod/<pod-name> 8080:8080 e.g.
-										 kubectl port-forward pod/go-web-app-deployment-57c98b868d-rj69p 8080:8080
+			  kubectl port-forward svc/go-web-app-service 8080:80 or kubectl port-forward pod/<pod-name> 8080:8080 e.g.kubectl port-forward pod/go-web-app-deployment-57c98b868d-rj69p 8080:8080
 
 				localhost:8080 → Kubectl  → Service:80  → Pod:8080
 
-				kubectl port-forward creates a temporary tunnel from my local machine to a Kubernetes service or pod. It allows me to access the application locally without 				exposing it externally. For example, I map localhost port 8080 to service port 80, which forwards traffic to the running pod.
+				kubectl port-forward creates a temporary tunnel from my local machine to a Kubernetes service or pod. It allows me to access the application locally without exposing it externally. For example, I map localhost port 8080 to service port 80, which forwards traffic to the running pod.
 				It is mainly used for debugging and development, as it bypasses Kubernetes networking and directly connects to the resource through the API server.
-
 				Local Port → kubectl tunnel → Service → Pod
-	
 
 			  Now open: http://localhost:8080/cources
+
 		OPTION 2: Change Service to LoadBalancer (REAL-WORLD)
 
 
 🔹 Step 9: Delete manifests
-	    kubectl delete -f .\k8s\manifests\
 
-            Delete resource group --> az group delete --name aks-rg --yes --no-wait
+	    kubectl delete -f .\k8s\manifests\
 
 ============================================================================================================
 
@@ -233,10 +230,13 @@ Step 6) Ingress (AKS Version)
 2)Check ingress controller is running or not 
 
 	kubectl get pod -n ingress-nginx
-	kubectl edit pod ingress-nginx-controller-6867499c78-v5mzq -n ingress-nginx 
+	kubectl edit pod <podname> -n ingress-nginx --->check ingressClassName: nginx
 	kubectl get ing
+  kubectl get all -->note pod, service and ingress should is running along with ingress-nginx namespace 
+  kubectl get all -n ingress-nginx --->this should be running ___|
 	ping go-web-app.local	
 
+            ingress  <-----watches nginx ingress controller ---create--->Load balancer 
 -----------------
 	🚀 HOW TO ACCESS YOUR APPLICATION
 	HOST: go-web-app.local
@@ -393,8 +393,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.TOKEN }}
 
       - name: Update tag in Helm chart
         run: |
@@ -416,77 +414,79 @@ Install Argo CD using manifests
   kubectl create namespace argocd
   kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 
-STEP 1: Change Service to LoadBalancer
-Access the Argo CD UI (Loadbalancer service)- For Linux:
-  kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}'
+STEP 1: Change Service to LoadBalancer:
+          Access the Argo CD UI (Loadbalancer service)- For Linux:
+            kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}'
 
-Access the Argo CD UI (Loadbalancer service) -For Windows:
-  kubectl patch svc argocd-server -n argocd -p '{\"spec\": {\"type\": \"LoadBalancer\"}}'
+          Access the Argo CD UI (Loadbalancer service) -For Windows:
+            kubectl patch svc argocd-server -n argocd -p '{\"spec\": {\"type\": \"LoadBalancer\"}}'
 
 ⏳ STEP 2: Wait for External IP
 
-Check:
-kubectl get svc argocd-server -n argocd
+          Check:kubectl get svc argocd-server -n argocd
 
-👉 Initially:
-EXTERNAL-IP: <pending>
+          👉 Initially:
+          EXTERNAL-IP: <pending>
 
-👉 After ~30–60 seconds:
-EXTERNAL-IP: 4.xxx.xxx.xxx  ✅
+          👉 After ~30–60 seconds:
+          EXTERNAL-IP: 4.xxx.xxx.xxx  ✅
 
 🔍 STEP 3: Verify Service Details
-kubectl describe svc argocd-server -n argocd
 
-👉 Ensure:
-Type: LoadBalancer
-Port: 80 → TargetPort: 8080
-Port: 443 → TargetPort: 8080
+          kubectl describe svc argocd-server -n argocd
+          👉 Ensure:
+          Type: LoadBalancer
+          Port: 80 → TargetPort: 8080
+          Port: 443 → TargetPort: 8080
 
 🌐 STEP 4: Access ArgoCD UI (IMPORTANT)
-👉 Open browser:
-https://<EXTERNAL-IP>
-Example:https://4.188.71.187
+
+          👉 Open browser:
+          https://<EXTERNAL-IP>
+          Example:https://4.188.71.187
 
 ⚠️ STEP 5: Handle SSL Warning
-You will see:
-Your connection is not private
-✔ Click: Advanced → Proceed
-👉 This is expected (self-signed cert)
+
+            You will see:
+            Your connection is not private
+            ✔ Click: Advanced → Proceed
+            👉 This is expected (self-signed cert)
 
 🔐 STEP 6: Get Login Credentials
-Username:admin
-Password:Run command:kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath="{.data.password}" | base64 -d
-👉 Copy output password
+            Username:admin
+            Password:Run command:kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath="{.data.password}" | base64 -d
+            👉 Copy output password
 
 🔑 STEP 7: Login
-Username → admin
-Password → (from above command)
+            Username → admin
+            Password → (from above command)
 
 🔍 STEP 8: If UI NOT Opening (Troubleshooting)
 
-   1. Test via curl
-curl -k https://<EXTERNAL-IP>
-🔹 2. Check pods
-kubectl get pods -n argocd
-👉 All should be:Running
-🔹 3. Check service again
-kubectl get svc -n argocd
-🔹 4. Check logs
-kubectl logs -n argocd deployment/argocd-server
-🔹 5. Restart (if needed)
-kubectl rollout restart deployment argocd-server -n argocd
+              1. Test via curl
+            curl -k https://<EXTERNAL-IP>
+            🔹 2. Check pods
+            kubectl get pods -n argocd
+            👉 All should be:Running
+            🔹 3. Check service again
+            kubectl get svc -n argocd
+            🔹 4. Check logs
+            kubectl logs -n argocd deployment/argocd-server
+            🔹 5. Restart (if needed)
+            kubectl rollout restart deployment argocd-server -n argocd
 
-⚠️ IMPORTANT NOTE (VERY COMMON ISSUE)
+            ⚠️ IMPORTANT NOTE (VERY COMMON ISSUE)
 
-If https is not working, try: https://<EXTERNAL-IP>:443
+            If https is not working, try: https://<EXTERNAL-IP>:443
 
-🔥 OPTIONAL (If HTTPS still gives trouble)
-Enable HTTP (for testing only):kubectl edit deployment argocd-server -n argocd
-Add under container args: - --insecure
-Then: kubectl rollout restart deployment argocd-server -n argocd
+            🔥 OPTIONAL (If HTTPS still gives trouble)
+            Enable HTTP (for testing only):kubectl edit deployment argocd-server -n argocd
+            Add under container args: - --insecure
+            Then: kubectl rollout restart deployment argocd-server -n argocd
 
-👉 Now access:
-http://<EXTERNAL-IP>
+            👉 Now access:
+            http://<EXTERNAL-IP>
+
 
 🧠 FINAL ARCHITECTURE
 Browser
@@ -499,6 +499,9 @@ Pod (ArgoCD running on 8080)
 
 Interview Answer: “To expose ArgoCD in AKS, I changed the service type to LoadBalancer, which created an Azure public IP. Since ArgoCD runs HTTPS by default, I accessed it via https://<external-ip> and retrieved the admin password from Kubernetes secret.”
 
+=====================================================================
+
+Last Step - delete resource group --> az group delete --name aks-rg --yes --no-wait
 =====================================================================
 
 🚀 🔐 COMPLETE ACCESS SUMMARY FOR YOUR CI PIPELINE
@@ -1144,7 +1147,155 @@ AAD role propagation done[############################################]  100.000
 }
 
 
+=======================================
 
+$ history
+chmod +x infra_creation_script.sh
+./infra_creation_script.sh
+az acr build -r myacr121 -t go-web-app:v1 .
+alias k=kubectl
+k get all
+k apply -f k8s/manifests/
+k get all
+k get svc
+k edit svc go-web-app-service
+k port-forward svc/go-web-app-service 8080:80
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/cloud/deploy.yaml
+k edit svc go-web-app-service
+
+kubectl get all -n ingress-nginx
+kubect get all 
+k get all
+k delete -f k8s/manifests/
+cd helm/
+helm install go-web-app go-web-app-chart/
+kubectl get all
+cd ..
+k get endpoints
+k describe svc go-web-app-service
+git add .
+git status
+git remote -v
+git commit -m "changed cources.html"
+git push -u origin main
+git add .
+git commit -m "changed  ci.yaml"
+git push -u origin main
+kubectl gel all
+kubectl get all
+cd helm/
+helm list
+helm uninstall go-web-app
+helm install go-web-app go-web-app-chart/
+cd ..
+kubectl create namespace argocd
+k get ns
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+k get all -n argocd
+
+k get svc -n argocd
+k edit svc argocd-server -n argocd
+k get svc -n argocd
+  
+k get nodes -o wide
+k edit svc argocd-server -n argocd
+k get svc -n argocd
+kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}'
+k get svc -n argocd
+
+k get nodes -o wide
+kubectl get svc -n argocd
+kubectl get endpoints -n argocd
+kubectl get pods -n argocd
+kubectl describe svc argocd-server -n argocd
+kubectl get svc argocd-server -n argocd
+kubectl logs -n argocd deployment/argocd-server
+kubectl get svc argocd-server -n argocd
+k delete svc argocd-server -n argocd
+k edit svc argocd-server -n argocd
+k get svc -n argocd
+kubectl delete -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+k get ns 
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+kubect get svc -n argocd
+kubectl get svc -n argocd
+kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "NodePort"}}'
+kubectl get svc -n argocd
+kubectl get nodes -o wide
+cd helm
+helm list
+k get all
+k get node -o wide
+k get svc -n argocd
+k edit svc argocd-server -n argocd
+k get ing -n argocd
+k get svc -n argocd
+kubectl get svc argocd-server -n argocd
+kubectl get pods -n argocd
+kubectl get pods -n argocd
+kubectl rollout restart deployment argocd-server -n argocd
+kubectl get pods -n argocd
+kubectl get pods -n argocd
+kubectl get svc argocd-server -n argocd
+kubectl get pods -n argocd
+kubectl get svc argocd-server -n argocd
+kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath="{.data.password}" | base64 -d
+k get ns
+k get deploy
+k get svc
+k get all
+git status
+git status
+git add .
+git status
+git add static/home.html
+git add .
+cd ..
+git add .
+git status
+git commit -m "update home page"
+git push -u origin main
+git fetch
+  
+git pull origin main --rebase
+git push -u origin main
+git fetch
+git push -u origin main
+git add .
+git commit -m "updated ci"
+git push -u origin main
+git pull origin main --rebase
+git push -u origin main
+cd helm
+helm list
+helm unistall go-web-app
+helm uninstall go-web-app
+helm list
+helm install go-web-app go-web-app-chart/
+helm install go-web-app go-web-app-chart/
+helm install go-web-app go-web-app-chart/
+helm install go-web-app go-web-app-chart/
+Error: INSTALLATION FAILED: unable to continue with install: Service "go-web-app-service" in namespace "default" exists and cannot be imported into the current release: invalid ownership metadata; label validation error: missing key "app.kubernetes.io/managed-by": must be set to "Helm"; annotation validation error: missing key "meta.helm.sh/release-name": must be set to "go-web-app"; annotation validation error: missing key "meta.helm.sh/release-namespace": must be set to "default"
+k get all
+cd ..
+k delete -f k8s/manifests/
+cd helm/
+helm install go-web-app go-web-app-chart/
+helm install go-web-app go-web-app-chart/ --dry-run --debug
+k get all
+cd ..
+k delete -f k8s/manifests/
+k get all
+k get all
+k delete deploy go-web-app-deployment
+k get all
+k delete svc go-web-app=service
+k delete svc go-web-app-service
+k get all
+cd helm/
+helm install go-app go-web-app-chart/
+k get all
+az group 
 				
 
 
